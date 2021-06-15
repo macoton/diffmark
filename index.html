@@ -1,0 +1,250 @@
+<html>
+    <head>
+        <style>
+            .side {
+                display: flex;
+            }
+        </style>
+        <script>
+            window.addEventListener(
+                'load',
+                () => {
+                    const deleteOption = [
+                        ['文字', '(row) => "< " + row'],
+                        ['色', '(row) => "<div style=\'color:red; text-decoration: line-through;\'>" + row + "</div>"'],
+                        ['塗り潰し', '(row) => "<div style=\'color:white; background-color:red;\'>" + row + "</div>"']
+                    ];
+                    const addOption = [
+                        ['文字', '(row) => "> " + row'],
+                        ['色', '(row) => "<div style=\'color:blue;\'>" + row + "</div>"'],
+                        ['塗り潰し', '(row) => "<div style=\'color:white; background-color:blue;\'>" + row + "</div>"']
+                    ];
+                    const sameOption = [
+                        ['文字', '(row) => row'],
+                        ['色', '(row) => "<div style=\'color:black;\'>" + row + "</div>"'],
+                        ['塗り潰し', '(row) => "<div style=\'color:black; background-color:white;\'>" + row + "</div>"']
+                    ];
+                    const baseFile = document.getElementById('baseFile');
+                    baseFile.addEventListener(
+                        'change', 
+                        () => {
+                            reader.onload =
+                                () => {
+                                    baseText = reader.result;
+                                    compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                                };
+                            if (baseFile.files.length <= 0) {
+                                baseText = '';
+                                compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                                return;
+                            }
+                            reader.readAsText(baseFile.files[0]);
+                        }
+                    );
+                    const editFile = document.getElementById('editFile');
+                    editFile.addEventListener(
+                        'change',
+                        () => {
+                            reader.onload =
+                                () => {
+                                    editText = reader.result;
+                                    compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                                };
+                            if (editFile.files.length <= 0) {
+                                editText = '';
+                                compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                                return;
+                            }
+                            reader.readAsText(editFile.files[0]);
+                        }
+                    );
+                    const compareElement = document.getElementById('compare');
+                    compareElement.addEventListener(
+                        'click',
+                        () => {
+                            const makeEdit = (A, B) => {
+                                const M = A.length;
+                                const N = B.length;
+                                const C = new Array(M + 1);
+                                const D = new Array(M + 1);
+                                for (let i = 0; i <= M; i++) {
+                                    C[i] = new Array(N + 1);
+                                    D[i] = new Array(N + 1);
+                                    C[i][0] = i;
+                                    D[i][0] = 'A';
+                                }
+                                for (let j = 1; j <= N; j++) {
+                                    C[0][j] = j;
+                                    D[0][j] = 'L';
+                                }
+                                for (let i = 1; i <= M; i++) {
+                                    for (let j = 1; j <= N; j++) {
+                                        const AC = C[i - 1][j] + 1;
+                                        const LC = C[i][j - 1] + 1;
+                                        const DC = A[i - 1] === B[j - 1] ? C[i - 1][j - 1] : 999999;
+                                        if (AC <= LC && AC <= DC) {
+                                            C[i][j] = AC;
+                                            D[i][j] = 'A';
+                                        } else if (LC <= AC && LC <= DC) {
+                                            C[i][j] = LC;
+                                            D[i][j] = 'L';
+                                        } else {
+                                            C[i][j] = DC;
+                                            D[i][j] = 'D';
+                                        }
+                                    }
+                                }
+                                let i = M;
+                                let j = N;
+                                const E = new Array(M - 1);
+                                const F = new Array(N - 1);
+                                while (i > 0 || j > 0) {
+                                    switch (D[i][j]) {
+                                        case 'A':
+                                            i--;
+                                            E[i] = 1;
+                                            break;
+                                        case 'L':
+                                            j--;
+                                            F[j] = 1;
+                                            break;
+                                        default:
+                                            i--;
+                                            j--;
+                                            E[i] = 0;
+                                            F[j] = 0;
+                                    }
+                                }
+                                return [E, F];
+                            }
+                            const makeResult = (A, B, E, F, G, H, I) => {
+                                const M = A.length;
+                                const N = B.length;
+                                let T = '';
+                                let i = 0;
+                                let j = 0;
+                                while (i < M || j < N) {
+                                    while (i < M && E[i] === 1) {
+                                        T += unescape(eval('('+ G.value + ')("' + escape(A[i]) + '")')) + '\r\n';
+                                        i++;
+                                    }
+                                    while (j < N && F[j] === 1) {
+                                        T += unescape(eval('('+ H.value + ')("' + escape(B[j]) + '")')) + '\r\n';
+                                        j++;
+                                    }
+                                    while (i < M && j < N && E[i] === 0 && F[j] === 0) {
+                                        T += unescape(eval('('+ I.value + ')("' + escape(A[i]) + '")')) + '\r\n';
+                                        i++;
+                                        j++
+                                    }
+                                }
+                                return T;
+                            }
+                            downloadElement.disabled = true;
+                            while (result.firstChild) {
+                                result.removeChild(result.firstChild);
+                            }
+                            const baseRow = baseText.split('\r\n');
+                            const editRow = editText.split('\r\n');
+                            const [deleteRow, addRow] = makeEdit(baseRow, editRow);
+                            const resultHtml = makeResult(baseRow, editRow, deleteRow, addRow, deleteProc, addProc, sameProc);
+                            result.innerHTML = resultHtml;
+                            downloadElement.disabled = result.children.length <= 0;
+                        }
+                    );
+                    const downloadElement = document.getElementById('download');
+                    downloadElement.addEventListener(
+                        'click',
+                        () => {
+                            const aaa = new Array();
+                            aaa.push(result.innerHTML);
+                            location.href = URL.createObjectURL(
+                                new Blob(
+                                    aaa,
+                                    {
+                                        type: 'application/octet-stream'
+                                    }
+                                )
+                            );
+                        }
+                    );
+                    let baseText = '';
+                    let editText = '';
+                    const reader = new FileReader();
+                    const deleteProc = document.getElementById('deleteProc');
+                    const selectDeleteProc = document.getElementById('selectDeleteProc');
+                    for (const [text, value] of deleteOption) {
+                        const option = document.createElement('option');
+                        option.text = text;
+                        option.value = value;
+                        selectDeleteProc.appendChild(option);
+                    }
+                    selectDeleteProc.addEventListener(
+                        'change',
+                        () => {
+                            deleteProc.value = event.currentTarget.value;
+                        }
+                    );
+                    deleteProc.value = selectDeleteProc.options[selectDeleteProc.selectedIndex = 1].value;
+                    const addProc = document.getElementById('addProc');
+                    const selectAddProc = document.getElementById('selectAddProc');
+                    for (const [text, value] of addOption) {
+                        const option = document.createElement('option');
+                        option.text = text;
+                        option.value = value;
+                        selectAddProc.appendChild(option);
+                    }   
+                    selectAddProc.addEventListener(
+                        'change',
+                        () => {
+                            addProc.value = event.currentTarget.value;
+                        }
+                    );
+                    addProc.value = selectAddProc.options[selectAddProc.selectedIndex = 1].value;
+                    const sameProc = document.getElementById('sameProc');
+                    const selectSameProc = document.getElementById('selectSameProc');
+                    for (const [text, value] of sameOption) {
+                        const option = document.createElement('option');
+                        option.text = text;
+                        option.value = value;
+                        selectSameProc.appendChild(option);
+                    }
+                    selectSameProc.addEventListener(
+                        'change',
+                        () => {
+                            sameProc.value = event.currentTarget.value;
+                        }
+                    );
+                    sameProc.value = selectSameProc.options[selectSameProc.selectedIndex = 1].value;
+                    const result = document.getElementById('result');
+                }
+            );
+        </script>
+    </head>
+    <body>
+        <form>
+            <div class="side">
+                <div>旧ファイル：<input type="file" id="baseFile"></div>
+                <div>新ファイル：<input type="file" id="editFile"></div>
+            </div>
+            <div>
+                <div><input type="button" id="compare" value="比較" disabled></div>
+                <div>削除行：
+                    <input id="deleteProc">
+                    <select id="selectDeleteProc"></select>
+                </div>
+                <div>追加行：
+                    <input id="addProc">
+                    <select id="selectAddProc"></select>
+                </div>
+                <div>同一行：
+                    <input id="sameProc">
+                    <select id="selectSameProc"></select>
+                </div>
+                <div><input type="button" id="download" value="ダウンロード" disabled></div>
+                <div>ファイル内容</div>
+                <div><pre id="result"></pre></div>
+            </div>
+        </form>
+    </body>
+</html>
