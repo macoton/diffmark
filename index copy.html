@@ -1,5 +1,6 @@
 <html>
     <head>
+        <meta charset="utf-8"/>
         <style>
             .side {
                 display: flex;
@@ -32,7 +33,7 @@
                             setCookie('baseText', baseText);
                             compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
                             if (baseFile.files.length > 0) {
-                                baseReader.readAsText(baseFile.files[0]);
+                                baseReader.readAsBinaryString(baseFile.files[0]);
                             }
                         }
                     );
@@ -44,7 +45,7 @@
                             setCookie('editText', editText);
                             compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
                             if (editFile.files.length > 0) {
-                                editReader.readAsText(editFile.files[0]);
+                                editReader.readAsBinaryString(editFile.files[0]);
                             }
                         }
                     );
