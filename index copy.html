@@ -9,15 +9,15 @@
             window.addEventListener(
                 'load',
                 () => {
-                    const deleteOption = [
-                        ['文字', '(row) => "< " + row'],
-                        ['色', '(row) => "<div style=\'color:red; text-decoration: line-through;\'>" + row + "</div>"'],
-                        ['塗り潰し', '(row) => "<div style=\'color:white; background-color:red;\'>" + row + "</div>"']
-                    ];
                     const addOption = [
                         ['文字', '(row) => "> " + row'],
                         ['色', '(row) => "<div style=\'color:blue;\'>" + row + "</div>"'],
                         ['塗り潰し', '(row) => "<div style=\'color:white; background-color:blue;\'>" + row + "</div>"']
+                    ];
+                    const deleteOption = [
+                        ['文字', '(row) => "< " + row'],
+                        ['色', '(row) => "<div style=\'color:red; text-decoration: line-through;\'>" + row + "</div>"'],
+                        ['塗り潰し', '(row) => "<div style=\'color:white; background-color:red;\'>" + row + "</div>"']
                     ];
                     const sameOption = [
                         ['文字', '(row) => row'],
@@ -28,38 +28,24 @@
                     baseFile.addEventListener(
                         'change', 
                         () => {
-                            reader.onload =
-                                () => {
-                                    baseText = reader.result;
-                                    setCookie('baseText', baseText);
-                                    compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
-                                };
-                            if (baseFile.files.length <= 0) {
-                                baseText = '';
-                                setCookie('baseText', baseText);
-                                compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
-                                return;
+                            baseText = '';
+                            setCookie('baseText', baseText);
+                            compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                            if (baseFile.files.length > 0) {
+                                baseReader.readAsText(baseFile.files[0]);
                             }
-                            reader.readAsText(baseFile.files[0]);
                         }
                     );
                     const editFile = document.getElementById('editFile');
                     editFile.addEventListener(
                         'change',
                         () => {
-                            reader.onload =
-                                () => {
-                                    editText = reader.result;
-                                    setCookie('editText', editText);
-                                    compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
-                                };
-                            if (editFile.files.length <= 0) {
-                                editText = '';
-                                setCookie('editText', editText);
-                                compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
-                                return;
+                            editText = '';
+                            setCookie('editText', editText);
+                            compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                            if (editFile.files.length > 0) {
+                                editReader.readAsText(editFile.files[0]);
                             }
-                            reader.readAsText(editFile.files[0]);
                         }
                     );
                     const compareElement = document.getElementById('compare');
@@ -190,22 +176,18 @@
                     }
                     let baseText = getCookie('baseText');
                     let editText = getCookie('editText');
-                    const reader = new FileReader();
-                    const deleteProc = document.getElementById('deleteProc');
-                    const selectDeleteProc = document.getElementById('selectDeleteProc');
-                    for (const [text, value] of deleteOption) {
-                        const option = document.createElement('option');
-                        option.text = text;
-                        option.value = value;
-                        selectDeleteProc.appendChild(option);
-                    }
-                    selectDeleteProc.addEventListener(
-                        'change',
+                    const baseReader = new FileReader();
+                    baseReader.onload =
                         () => {
-                            deleteProc.value = event.currentTarget.value;
-                        }
-                    );
-                    deleteProc.value = selectDeleteProc.options[selectDeleteProc.selectedIndex = 1].value;
+                            baseText = baseReader.result;
+                            compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                        };
+                    const editReader = new FileReader();
+                    editReader.onload =
+                        () => {
+                            editText = editReader.result;
+                            compareElement.disabled = baseText.length <= 0 || editText.length <= 0;
+                        };
                     const addProc = document.getElementById('addProc');
                     const selectAddProc = document.getElementById('selectAddProc');
                     for (const [text, value] of addOption) {
@@ -221,6 +203,21 @@
                         }
                     );
                     addProc.value = selectAddProc.options[selectAddProc.selectedIndex = 1].value;
+                    const deleteProc = document.getElementById('deleteProc');
+                    const selectDeleteProc = document.getElementById('selectDeleteProc');
+                    for (const [text, value] of deleteOption) {
+                        const option = document.createElement('option');
+                        option.text = text;
+                        option.value = value;
+                        selectDeleteProc.appendChild(option);
+                    }
+                    selectDeleteProc.addEventListener(
+                        'change',
+                        () => {
+                            deleteProc.value = event.currentTarget.value;
+                        }
+                    );
+                    deleteProc.value = selectDeleteProc.options[selectDeleteProc.selectedIndex = 1].value;
                     const sameProc = document.getElementById('sameProc');
                     const selectSameProc = document.getElementById('selectSameProc');
                     for (const [text, value] of sameOption) {
@@ -249,13 +246,13 @@
             </div>
             <div>
                 <div><input type="button" id="compare" value="比較" disabled></div>
-                <div>削除行：
-                    <input id="deleteProc">
-                    <select id="selectDeleteProc"></select>
-                </div>
                 <div>追加行：
                     <input id="addProc">
                     <select id="selectAddProc"></select>
+                </div>
+                <div>削除行：
+                    <input id="deleteProc">
+                    <select id="selectDeleteProc"></select>
                 </div>
                 <div>同一行：
                     <input id="sameProc">
